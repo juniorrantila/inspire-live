@@ -124,6 +124,19 @@ fn lex_quoted<'content>(content: &'content str) -> &'content str {
     return &content[..=end_index];
 }
 
+pub fn clean_up_for_attribute_key<'content>(content: &'content str) -> &'content str {
+    let mut trailing_spaces = 0;
+    let chars = content.chars();
+    for c in chars.rev() {
+        if c == ' ' {
+            trailing_spaces += 1;
+            continue;
+        }
+        break;
+    }
+    return &content[..content.len() - trailing_spaces];
+}
+
 fn remove_trailing_new_lines<'content>(content: &'content str) -> &'content str {
     let mut trailing_new_lines = 0;
     let chars = content.chars();
