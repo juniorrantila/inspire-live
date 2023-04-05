@@ -163,6 +163,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7de8ce5e0f9f8d88245311066a578d72b7af3e7088f32783804676302df237e4"
 
 [[package]]
+name = "app"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_egui",
+ "display",
+ "egui",
+ "root_path",
+ "slides",
+]
+
+[[package]]
 name = "approx"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1128,6 +1140,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd0c93bb4b0c6d9b77f4435b0ae98c24d17f1c45b2ff844c6151a07256ca923b"
 
 [[package]]
+name = "display"
+version = "0.1.0"
+dependencies = [
+ "egui",
+]
+
+[[package]]
 name = "downcast-rs"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1522,9 +1541,14 @@ dependencies = [
 name = "inspire-live"
 version = "0.1.0"
 dependencies = [
+ "app",
  "bevy",
  "bevy_egui",
+ "display",
  "egui",
+ "root_path",
+ "sil",
+ "slides",
 ]
 
 [[package]]
@@ -2155,6 +2179,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1382d1f0a252c4bf97dc20d979a2fdd05b024acd7c2ed0f7595d7817666a157"
 
 [[package]]
+name = "root_path"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2221,12 +2252,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "sil"
+version = "0.1.0"
+
+[[package]]
 name = "slab"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6528351c9bc8ab22353f9d776db39a20288e8d6c37ef8cfe3317cf875eecfc2d"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "slides"
+version = "0.1.0"
+dependencies = [
+ "egui",
 ]
 
 [[package]]

@@ -1,11 +1,14 @@
 use bevy::prelude::Resource;
 use egui::{Align, Layout, TextStyle};
 
-use crate::display::Display;
-use crate::slides::Slides;
+use root_path::RootPath;
+use display::Display;
+use slides::Slides;
 
-#[derive(Default, Resource)]
+#[derive(Resource)]
 pub struct App {
+    root: RootPath,
+
     preview: Display,
     output: Display,
 
@@ -13,11 +16,26 @@ pub struct App {
 }
 
 impl App {
+    pub fn from(root: RootPath) -> Self {
+        Self {
+            root,
+            preview: Display::default(),
+            output: Display::default(),
+            slides: Slides::default(),
+        }
+    }
+
     pub fn output(&self) -> &Display {
         return &self.preview; // FIXME: Change to &self.output when we're able to commit messages.
     }
 
+    fn update_slides_if_needed(&mut self) {
+        self.slides.update_if_needed()
+    }
+
     pub fn update(&mut self, ctx: &egui::Context) {
+        self.update_slides_if_needed();
+
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
                 let available_size = ui.available_size();

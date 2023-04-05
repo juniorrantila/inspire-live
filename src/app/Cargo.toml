@@ -1,22 +1,15 @@
 [package]
-name = "inspire-live"
+name = "app"
 version = "0.1.0"
 edition = "2021"
 
-[workspace]
-members = [
-    "src/app",
-    "src/display",
-    "src/sil",
-    "src/slides",
-]
+[lib]
+path = "app.rs"
 
 [dependencies]
-app = { path="src/app" }
-display = { path="src/display" }
-slides = { path="src/slides" }
-root_path = { path="src/root_path" }
-sil = { path="src/sil" }
+display = { path = "../display" }
+slides = { path = "../slides" }
+root_path = { path = "../root_path" }
 
 bevy = { version = "0.10.1", default-features=false, features = [
      # "android_shared_stdcxx",

@@ -1,7 +1,3 @@
-mod app;
-mod display;
-mod slides;
-
 use bevy::core_pipeline::core_3d::Camera3dBundle;
 use bevy::ecs::prelude::ResMut;
 use bevy::ecs::query::With;
@@ -22,22 +18,42 @@ use bevy_egui::{EguiContext, EguiPlugin};
 use egui::Align;
 use egui::Label;
 use egui::Layout;
+use root_path::RootPath;
 
-fn main() {
+use sil::lex;
+
+fn main() -> Result<(), &'static str> {
+    let input = "[title]\nFoobar\n\n[text]\ncolor = 123";
+    let tokens = lex(&input);
+    println!("{:?}", tokens);
+
     bevy::prelude::App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
-        .insert_resource(app::App::default())
+        .insert_resource(app::App::from(
+            fetch_root_folder().ok_or("invalid root path")?,
+        ))
         .add_startup_system(create_display_window)
-        .add_system(control_window)
-        .add_system(display_window)
+        .add_systems((control_window, display_window))
         .run();
+
+    Ok(())
+}
+
+fn fetch_root_folder() -> Option<RootPath> {
+    let args: Vec<String> = std::env::args().collect();
+    let path = if args.len() > 1 { &args[1] } else { "." };
+    let file_path = std::path::Path::new(path);
+    if !file_path.exists() || !file_path.is_dir() {
+        return None
+    }
+    return Some(RootPath::from(path));
 }
 
 fn create_display_window(mut commands: Commands) {
     let display_window_id = commands
         .spawn(Window {
-            title: "display".to_owned(),
+            title: "output".to_owned(),
             resolution: WindowResolution::new(800.0, 600.0),
             present_mode: PresentMode::AutoVsync,
             ..Default::default()

@@ -5,6 +5,11 @@ pub struct Slides {
     selected_slide: usize,
 }
 
+impl Slides {
+    pub fn update_if_needed(&mut self) {
+    }
+}
+
 impl Default for Slides {
     fn default() -> Self {
         Self {
