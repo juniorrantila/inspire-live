@@ -1,5 +1,8 @@
 mod lex;
+mod parse;
+
 pub use lex::*;
+pub use parse::*;
 
 pub struct SilFile<'content> {
     pub layers: Vec<Layer<'content>>,
@@ -8,9 +11,10 @@ pub struct SilFile<'content> {
 
 impl <'content>SilFile<'content> {
     pub fn from(content: &'content str) -> Option<Self> {
-        let mut layers: Vec<Layer> = Vec::new();
+        let layers: Vec<Layer> = Vec::new();
 
-        let tokens = lex(content);
+        let tokens = lex(content)?;
+        let _ast = parse(&tokens);
 
         return Some(SilFile {
             layers,

@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Token<'content> {
     Number(&'content str),
     Text(&'content str),
@@ -9,6 +9,20 @@ pub enum Token<'content> {
 
     Colon,
     EqualSign,
+}
+
+impl <'content>Token<'content> {
+    pub fn text(&self) -> &'content str {
+        match self {
+            Token::Number(text) => text,
+            Token::Text(text) => text,
+            Token::Quoted(text) => text,
+            Token::OpenBracket => "[",
+            Token::CloseBracket => "]",
+            Token::Colon => ":",
+            Token::EqualSign => "=",
+        }
+    }
 }
 
 pub fn lex<'content>(mut content: &'content str) -> Option<Vec<Token>> {
