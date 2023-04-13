@@ -4,13 +4,13 @@ mod parse;
 pub use lex::*;
 pub use parse::*;
 
-pub struct SilFile<'content> {
-    pub layers: Vec<Layer<'content>>,
-    pub content: &'content str,
+pub struct SilFile {
+    pub layers: Vec<Layer>,
+    pub content: &'static str,
 }
 
-impl <'content>SilFile<'content> {
-    pub fn from(content: &'content str) -> Option<Self> {
+impl SilFile {
+    pub fn from(content: &'static str) -> Option<Self> {
         let layers: Vec<Layer> = Vec::new();
 
         let tokens = lex(content)?;
@@ -41,24 +41,24 @@ impl Align {
     }
 }
 
-pub enum Layer<'content> {
+pub enum Layer {
     Color(Color),
-    Text(Text<'content>),
+    Text(Text),
 }
 
 pub struct Color {
     value: u32,
 }
 
-pub struct Text<'content> {
+pub struct Text {
     align: Align,
-    content: &'content str,
+    content: &'static str,
     font_size: u32,
     font_weight: FontWeight,
     font_style: FontStyle,
 }
 
-impl Text<'_> {
+impl Text {
     fn align(&self) -> Align { self.align }
     fn content(&self) -> &str { &self.content }
     fn font_size(&self) -> u32 { self.font_size }
@@ -66,8 +66,8 @@ impl Text<'_> {
     fn font_style(&self) -> FontStyle { self.font_style }
 }
 
-impl <'content>Text<'content> {
-    pub fn text(content: &'content str) -> Self {
+impl Text {
+    pub fn text(content: &'static str) -> Self {
         Self {
             align: Align::Center,
             content,
@@ -77,7 +77,7 @@ impl <'content>Text<'content> {
         }
     }
 
-    pub fn header(content: &'content str) -> Self {
+    pub fn header(content: &'static str) -> Self {
         Self {
             align: Align::Center,
             content,

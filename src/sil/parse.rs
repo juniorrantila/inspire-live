@@ -1,18 +1,19 @@
+use std::fmt::Debug;
 use std::ops::Index;
 use std::ops::IndexMut;
 
 use crate::lex::Token;
 
-pub struct AST<'content> {
-    nodes: Vec<Node<'content>>,
-    garbages: Vec<Garbage<'content>>,
-    attributes: Vec<Attribute<'content>>,
+pub struct AST {
+    nodes: Vec<Node>,
+    garbages: Vec<Garbage>,
+
+    attributes: Vec<Attribute>,
 
     ast: Vec<AstNode>,
 }
-
-impl<'content> AST<'content> {
-    pub fn new() -> AST<'content> {
+impl AST {
+    pub fn new() -> AST {
         AST {
             nodes: Vec::new(),
             garbages: Vec::new(),
@@ -21,13 +22,13 @@ impl<'content> AST<'content> {
         }
     }
 
-    fn push_node(&mut self, node: Node<'content>) -> AstNode {
+    fn push_node(&mut self, node: Node) -> AstNode {
         let index = self.nodes.len();
         self.nodes.push(node);
         return AstNode::Node(index);
     }
 
-    fn push_garbage(&mut self, garbage: Garbage<'content>) -> AstNode {
+    fn push_garbage(&mut self, garbage: Garbage) -> AstNode {
         let index = self.garbages.len();
         self.garbages.push(garbage);
         return AstNode::Garbage(index);
@@ -39,42 +40,122 @@ impl<'content> AST<'content> {
         return AstSlot(index);
     }
 }
+impl PartialEq for AST {
+    fn eq(&self, other: &Self) -> bool {
+        // Ignore order of attributes since they're in nodes anyway.
+        self.nodes == other.nodes && self.garbages == other.garbages && self.ast == other.ast
+    }
+}
+impl Debug for AST {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "AST {{ nodes: {:?}, garbages: {:?}, ast: {:?} }}",
+            self.nodes, self.garbages, self.ast
+        ))
+    }
+}
 
-impl<'content> Index<AstSlot> for AST<'content> {
+impl Index<AstSlot> for AST {
     type Output = AstNode;
     fn index(&self, index: AstSlot) -> &Self::Output {
         &self.ast[index.0]
     }
 }
 
-impl<'content> IndexMut<AstSlot> for AST<'content> {
+impl IndexMut<AstSlot> for AST {
     fn index_mut(&mut self, index: AstSlot) -> &mut Self::Output {
         &mut self.ast[index.0]
     }
 }
 
+#[derive(Debug, PartialEq)]
 struct AstSlot(usize);
 
+#[derive(Debug, PartialEq)]
 pub enum AstNode {
     Node(usize),
     Garbage(usize),
     Reserve,
 }
 
-struct Garbage<'content> {
-    offending_tokens: &'content [Token<'content>],
+struct Garbage {
+    offending_tokens: *const [Token],
     message: &'static str,
 }
-
-struct Node<'content> {
-    kind: &'content str,
-    attributes: &'content [Attribute<'content>],
-    body: &'content str,
+impl Garbage {
+    fn offending_tokens(&self) -> &[Token] {
+        unsafe { &*self.offending_tokens } // Tokens are expected to outlive Garbage.
+    }
+}
+impl Debug for Garbage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "offending_tokens: {:?}, message: {:?}",
+            self.offending_tokens(),
+            self.message
+        ))
+    }
+}
+impl PartialEq for Garbage {
+    fn eq(&self, other: &Self) -> bool {
+        self.offending_tokens() == other.offending_tokens() && self.message == other.message
+    }
 }
 
-struct Attribute<'content> {
-    name: &'content str,
-    value: &'content str,
+struct Node {
+    kind: &'static str,
+    attributes: *const [Attribute],
+    body: *const [Token],
+}
+impl Node {
+    fn attributes(&self) -> &[Attribute] {
+        unsafe { &*self.attributes } // Tokens are expected to outlive Node.
+    }
+
+    fn body(&self) -> &[Token] {
+        unsafe { &*self.body } // Tokens are expected to outlive Node.
+    }
+}
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+            && self.attributes() == other.attributes()
+            && self.body() == other.body()
+    }
+}
+impl Debug for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Node {{ kind: {:?}, attributes: {:?}, body: {:?} }}",
+            self.kind,
+            self.attributes(),
+            self.body()
+        ))
+    }
+}
+
+struct Attribute {
+    name: &'static str,
+    value: *const [Token],
+}
+impl Attribute {
+    fn value(&self) -> &[Token] {
+        unsafe { &*self.value } // Tokens are expected to outlive Attribute.
+    }
+}
+impl PartialEq for Attribute {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name && self.value() == other.value()
+    }
+}
+impl Debug for Attribute {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Attribute {{ name: {:?}, value: {:?} }}",
+            self.name,
+            self.value()
+        ))
+    }
 }
 
 struct ParseValue<T> {
@@ -82,7 +163,7 @@ struct ParseValue<T> {
     consumed_tokens: usize,
 }
 
-pub fn parse<'content>(tokens: &'content [Token<'content>]) -> AST<'content> {
+pub fn parse(tokens: &[Token]) -> AST {
     let mut ast = AST::new();
 
     let mut i = 0;
@@ -91,21 +172,21 @@ pub fn parse<'content>(tokens: &'content [Token<'content>]) -> AST<'content> {
         match token {
             Token::Number(_) => {
                 ast.push_garbage(Garbage {
-                    offending_tokens: &tokens[i..1],
+                    offending_tokens: &tokens[i..i + 1],
                     message: "unexpected number",
                 });
                 i += 1;
             }
             Token::Text(_) => {
                 ast.push_garbage(Garbage {
-                    offending_tokens: &tokens[i..1],
+                    offending_tokens: &tokens[i..i + 1],
                     message: "unexpected text",
                 });
                 i += 1;
             }
             Token::Quoted(_) => {
                 ast.push_garbage(Garbage {
-                    offending_tokens: &tokens[i..1],
+                    offending_tokens: &tokens[i..i + 1],
                     message: "unexpected quoted",
                 });
                 i += 1;
@@ -131,38 +212,27 @@ pub fn parse<'content>(tokens: &'content [Token<'content>]) -> AST<'content> {
             }
             Token::CloseBracket => {
                 ast.push_garbage(Garbage {
-                    offending_tokens: &tokens[i..1],
+                    offending_tokens: &tokens[i..i + 1],
                     message: "unexpected quoted",
                 });
                 i += 1;
             }
             Token::Colon => {
                 ast.push_garbage(Garbage {
-                    offending_tokens: &tokens[i..1],
+                    offending_tokens: &tokens[i..i + 1],
                     message: "unexpected colon",
                 });
                 i += 1;
             }
             Token::EqualSign => {
                 ast.push_garbage(Garbage {
-                    offending_tokens: &tokens[i..1],
+                    offending_tokens: &tokens[i..i + 1],
                     message: "unexpected equal sign",
                 });
                 i += 1;
             }
         }
     }
-
-    ast.push_node(Node {
-        kind: tokens[0].text(),
-        attributes: &[],
-        body: "bar",
-    });
-
-    ast.push_garbage(Garbage {
-        offending_tokens: &tokens[0..0],
-        message: "foobar",
-    });
 
     return ast;
 }
@@ -178,50 +248,28 @@ enum ParseBlock {
     },
 }
 
-fn parse_block<'content>(
-    ast: &'content mut AST<'content>,
-    tokens: &'content [Token<'content>],
-) -> ParseBlock {
+fn parse_block(ast: &mut AST, tokens: &[Token]) -> ParseBlock {
     let mut consumed_tokens = 0;
     let key = &tokens[0..3];
     match key {
         [Token::OpenBracket, Token::Text(kind), Token::CloseBracket] => {
             consumed_tokens += key.len();
-            match parse_attributes(ast, &tokens[consumed_tokens..]) {
-                ParseAttributes::Attributes {
-                    value: attributes,
-                    consumed_tokens: consumed,
-                } => {
-                    consumed_tokens += consumed;
-                    match parse_body(ast, &tokens[consumed_tokens..]) {
-                        ParseBody::Body {
-                            value: body,
-                            consumed_tokens: consumed,
-                        } => ParseBlock::Node {
-                            value: ast.push_node(Node {
-                                kind,
-                                attributes,
-                                body,
-                            }),
-                            consumed_tokens: consumed_tokens + consumed,
-                        },
-                        ParseBody::Garbage {
-                            value,
-                            consumed_tokens: consumed,
-                        } => ParseBlock::Garbage {
-                            value: ast.push_garbage(value),
-                            consumed_tokens: consumed_tokens + consumed,
-                        },
-                    }
-                }
-                ParseAttributes::Garbage {
-                    value,
-                    consumed_tokens: consumed,
-                } => ParseBlock::Garbage {
-                    value: ast.push_garbage(value),
-                    consumed_tokens: consumed_tokens + consumed,
-                },
-            }
+            let attributes = parse_attributes(ast, &tokens[consumed_tokens..]);
+            consumed_tokens += attributes.consumed_tokens;
+            let attributes = attributes.value;
+
+            let body = parse_body(ast, &tokens[consumed_tokens..]);
+            consumed_tokens += body.consumed_tokens();
+            let body = body.body();
+
+            return ParseBlock::Node {
+                value: ast.push_node(Node {
+                    kind,
+                    attributes,
+                    body,
+                }),
+                consumed_tokens,
+            };
         }
         _ => ParseBlock::Garbage {
             value: ast.push_garbage(Garbage {
@@ -233,51 +281,123 @@ fn parse_block<'content>(
     }
 }
 
-enum ParseAttributes<'ast, 'content> {
-    Attributes {
-        value: &'ast [Attribute<'content>],
-        consumed_tokens: usize,
-    },
-    Garbage {
-        value: Garbage<'content>,
-        consumed_tokens: usize,
-    },
+struct ParseAttributes {
+    value: *const [Attribute],
+    consumed_tokens: usize,
 }
 
-fn parse_attributes<'ast, 'content>(
-    ast: &'ast mut AST<'content>,
-    tokens: &'content [Token<'content>],
-) -> ParseAttributes<'ast, 'content> {
+fn parse_attributes(ast: &mut AST, complete_tokens: &[Token]) -> ParseAttributes {
     let mut consumed_tokens = 0;
+    let attributes_start = ast.attributes.len();
 
-    let start_index = ast.attributes.len();
+    let mut tokens = complete_tokens;
+    while !tokens.is_empty() {
+        match tokens {
+            [Token::Text(_), Token::EqualSign, ..] => {
+                let attribute = parse_attribute(ast, tokens);
+                consumed_tokens += attribute.consumed_tokens();
+                tokens = &complete_tokens[consumed_tokens..];
+                if let ParseAttribute::Attribute {
+                    value,
+                    consumed_tokens: _,
+                } = attribute
+                {
+                    ast.attributes.push(value);
+                }
+            }
+            _ => break,
+        }
+    }
 
-    // Parse attribute in loop.
-
-    let end_index = ast.attributes.len();
-
-    return ParseAttributes::Attributes {
-        value: &ast.attributes[start_index..end_index],
+    let attributes_end = ast.attributes.len();
+    return ParseAttributes {
+        value: &ast.attributes[attributes_start..attributes_end],
         consumed_tokens,
     };
 }
 
-enum ParseAttribute<'content> {
+enum ParseAttribute {
     Attribute {
-        value: Attribute<'content>,
+        value: Attribute,
         consumed_tokens: usize,
     },
     Garbage {
-        value: Garbage<'content>,
+        value: Garbage,
+        consumed_tokens: usize,
+    },
+}
+impl ParseAttribute {
+    fn consumed_tokens(&self) -> usize {
+        return match self {
+            Self::Attribute {
+                value: _,
+                consumed_tokens,
+            } => *consumed_tokens,
+            Self::Garbage {
+                value: _,
+                consumed_tokens,
+            } => *consumed_tokens,
+        };
+    }
+}
+
+fn parse_attribute(_ast: &mut AST, tokens: &[Token]) -> ParseAttribute {
+    match tokens {
+        [Token::Text(name), Token::EqualSign, Token::Quoted(_), ..]=> ParseAttribute::Attribute {
+            value: Attribute {
+                name,
+                value: &tokens[2..3],
+            },
+            consumed_tokens: 3,
+        },
+        _ => ParseAttribute::Garbage {
+            value: Garbage {
+                offending_tokens: &tokens[0..1],
+                message: "not an attribute",
+            },
+            consumed_tokens: 1,
+        },
+    }
+}
+
+enum ParseBody {
+    Body {
+        value: *const [Token],
+        consumed_tokens: usize,
+    },
+    Garbage {
+        value: Garbage,
         consumed_tokens: usize,
     },
 }
 
-fn parse_attribute<'content>(
-    ast: &mut AST<'content>,
-    tokens: &'content [Token<'content>],
-) -> ParseAttribute<'content> {
-    ParseAttribute::Garbage {
+impl ParseBody {
+    fn consumed_tokens(&self) -> usize {
+        return match self {
+            ParseBody::Body {
+                value: _,
+                consumed_tokens,
+            } => *consumed_tokens,
+            ParseBody::Garbage {
+                value: _,
+                consumed_tokens,
+            } => *consumed_tokens,
+        };
+    }
+
+    fn body(self) -> *const [Token] {
+        match self {
+            Self::Body {
+                value,
+                consumed_tokens: _,
+            } => value,
+            _ => &[],
+        }
+    }
+}
+
+fn parse_body(_ast: &mut AST, _tokens: &[Token]) -> ParseBody {
+    ParseBody::Garbage {
         value: Garbage {
             offending_tokens: &[],
             message: "",
@@ -286,26 +406,91 @@ fn parse_attribute<'content>(
     }
 }
 
-enum ParseBody<'content> {
-    Body {
-        value: &'content str,
-        consumed_tokens: usize,
-    },
-    Garbage {
-        value: Garbage<'content>,
-        consumed_tokens: usize,
-    },
-}
+#[cfg(test)]
+mod tests {
+    use crate::parse::*;
 
-fn parse_body<'content>(
-    _ast: &mut AST<'content>,
-    _tokens: &'content [Token<'content>],
-) -> ParseBody<'content> {
-    ParseBody::Garbage {
-        value: Garbage {
-            offending_tokens: &[],
-            message: "",
-        },
-        consumed_tokens: 1,
+    #[test]
+    fn can_parse_block() {
+        let tokens = [
+            Token::OpenBracket,
+            Token::Text("title"),
+            Token::CloseBracket,
+        ];
+
+        let mut expected_ast = AST::new();
+        let node_slot = expected_ast.reserve_slot();
+        expected_ast[node_slot] = expected_ast.push_node(Node {
+            kind: "title",
+            attributes: &[],
+            body: &[],
+        });
+
+        let ast = parse(&tokens);
+        assert_eq!(ast, expected_ast);
+    }
+
+    #[test]
+    fn can_parse_block_with_single_attribute() {
+        let tokens = [
+            Token::OpenBracket,
+            Token::Text("title"),
+            Token::CloseBracket,
+            //
+            Token::Text("foo"),
+            Token::EqualSign,
+            Token::Quoted("123"),
+        ];
+
+        let mut expected_ast = AST::new();
+        let node_slot = expected_ast.reserve_slot();
+        expected_ast[node_slot] = expected_ast.push_node(Node {
+            kind: "title",
+            attributes: &[Attribute {
+                name: "foo",
+                value: &[Token::Quoted("123")],
+            }],
+            body: &[],
+        });
+        let ast = parse(&tokens);
+
+        assert_eq!(ast, expected_ast);
+    }
+
+    #[test]
+    fn can_parse_block_with_two_attributes() {
+        let tokens = [
+            Token::OpenBracket,
+            Token::Text("title"),
+            Token::CloseBracket,
+            //
+            Token::Text("foo"),
+            Token::EqualSign,
+            Token::Quoted("123"),
+            //
+            Token::Text("bar"),
+            Token::EqualSign,
+            Token::Quoted("42"),
+        ];
+
+        let mut expected_ast = AST::new();
+        let node_slot = expected_ast.reserve_slot();
+        expected_ast[node_slot] = expected_ast.push_node(Node {
+            kind: "title",
+            attributes: &[
+                Attribute {
+                    name: "foo",
+                    value: &[Token::Quoted("123")],
+                },
+                Attribute {
+                    name: "bar",
+                    value: &[Token::Quoted("42")],
+                },
+            ],
+            body: &[],
+        });
+        let ast = parse(&tokens);
+
+        assert_eq!(ast, expected_ast);
     }
 }

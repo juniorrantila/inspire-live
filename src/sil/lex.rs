@@ -1,8 +1,8 @@
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Token<'content> {
-    Number(&'content str),
-    Text(&'content str),
-    Quoted(&'content str),
+pub enum Token {
+    Number(&'static str),
+    Text(&'static str),
+    Quoted(&'static str),
 
     OpenBracket,
     CloseBracket,
@@ -11,8 +11,8 @@ pub enum Token<'content> {
     EqualSign,
 }
 
-impl <'content>Token<'content> {
-    pub fn text(&self) -> &'content str {
+impl Token {
+    pub fn text(&self) -> &'static str {
         match self {
             Token::Number(text) => text,
             Token::Text(text) => text,
@@ -25,7 +25,7 @@ impl <'content>Token<'content> {
     }
 }
 
-pub fn lex<'content>(mut content: &'content str) -> Option<Vec<Token>> {
+pub fn lex(mut content: &'static str) -> Option<Vec<Token>> {
     let mut tokens: Vec<Token> = Vec::new();
 
     while content.len() > 0 {
@@ -81,7 +81,7 @@ pub fn lex<'content>(mut content: &'content str) -> Option<Vec<Token>> {
     Some(tokens)
 }
 
-fn lex_text<'content>(content: &'content str) -> &'content str {
+fn lex_text(content: &str) -> &str {
     let mut end_index = 0;
 
     let mut chars = content.chars();
@@ -99,7 +99,7 @@ fn lex_text<'content>(content: &'content str) -> &'content str {
     return &content[..end_index];
 }
 
-fn lex_number<'content>(content: &'content str) -> &'content str {
+fn lex_number(content: &str) -> &str {
     let mut end_index = 0;
 
     let mut chars = content.chars();
@@ -118,7 +118,7 @@ fn lex_number<'content>(content: &'content str) -> &'content str {
 }
 
 // FIXME: Handle escapes.
-fn lex_quoted<'content>(content: &'content str) -> &'content str {
+fn lex_quoted(content: &str) -> &str {
     let quoted = &content[1..]; // Remove starting quote.
 
     let mut end_index = 1;
@@ -138,7 +138,7 @@ fn lex_quoted<'content>(content: &'content str) -> &'content str {
     return &content[..=end_index];
 }
 
-pub fn clean_up_for_attribute_key<'content>(content: &'content str) -> &'content str {
+pub fn clean_up_for_attribute_key(content: &str) -> &str {
     let mut trailing_spaces = 0;
     let chars = content.chars();
     for c in chars.rev() {
@@ -151,7 +151,7 @@ pub fn clean_up_for_attribute_key<'content>(content: &'content str) -> &'content
     return &content[..content.len() - trailing_spaces];
 }
 
-fn remove_trailing_new_lines<'content>(content: &'content str) -> &'content str {
+fn remove_trailing_new_lines(content: &str) -> &str {
     let mut trailing_new_lines = 0;
     let chars = content.chars();
     for c in chars.rev() {
