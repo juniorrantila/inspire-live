@@ -28,12 +28,12 @@ bevy = { version = "0.10.1", default-features=false, features = [
      # "bevy_gilrs",
      # "bevy_gltf",
      # "bevy_pbr",
-     "bevy_render",
+     # "bevy_render",
      # "bevy_scene",
-     "bevy_sprite",
+     # "bevy_sprite",
      # "bevy_text",
-     "bevy_ui",
-     "bevy_winit",
+     # "bevy_ui",
+     # "bevy_winit",
      # "filesystem_watcher",
      # "hdr",
      # "ktx2",
@@ -41,7 +41,9 @@ bevy = { version = "0.10.1", default-features=false, features = [
      # "tonemapping_luts",
      # "vorbis",
      "x11",
-     "zstd",
+     # "zstd",
 ]}
-bevy_egui = "0.20.2"
-egui = { version = "0.21.0", default-features = false, features = [] }
+bevy_egui = { version = "0.20.2", default-features=false, features=[
+    "default_fonts"
+]}
+egui = { version = "0.21.0", default-features = false, features=[] }
