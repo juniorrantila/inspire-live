@@ -163,89 +163,70 @@ struct ParseValue<T> {
     consumed_tokens: usize,
 }
 
-pub fn parse(tokens: &[Token]) -> AST {
+pub fn parse(complete_tokens: &[Token]) -> AST {
     let mut ast = AST::new();
 
-    let mut i = 0;
-    while i < tokens.len() {
-        let token = tokens[i];
-        match token {
-            Token::Number(_) => {
+    let mut tokens = complete_tokens;
+    while !tokens.is_empty() {
+        match tokens {
+            [Token::Number(_), ..] => {
                 ast.push_garbage(Garbage {
-                    offending_tokens: &tokens[i..i + 1],
+                    offending_tokens: &tokens[..1],
                     message: "unexpected number",
                 });
-                i += 1;
+                tokens = &tokens[1..];
             }
-            Token::Text(_) => {
+            [Token::Text(_), ..] => {
                 ast.push_garbage(Garbage {
-                    offending_tokens: &tokens[i..i + 1],
+                    offending_tokens: &tokens[..1],
                     message: "unexpected text",
                 });
-                i += 1;
+                tokens = &tokens[1..];
             }
-            Token::Quoted(_) => {
+            [Token::Quoted(_), ..] => {
                 ast.push_garbage(Garbage {
-                    offending_tokens: &tokens[i..i + 1],
+                    offending_tokens: &tokens[..1],
                     message: "unexpected quoted",
                 });
-                i += 1;
+                tokens = &tokens[1..];
             }
-            Token::OpenBracket => {
+            [Token::OpenBracket, ..] => {
                 let slot = ast.reserve_slot();
-                match parse_block(&mut ast, tokens) {
-                    ParseBlock::Node {
-                        value,
-                        consumed_tokens,
-                    } => {
-                        ast[slot] = value;
-                        i += consumed_tokens;
-                    }
-                    ParseBlock::Garbage {
-                        value,
-                        consumed_tokens,
-                    } => {
-                        ast[slot] = value;
-                        i += consumed_tokens;
-                    }
-                }
+                let block = parse_block(&mut ast, tokens);
+                ast[slot] = block.value;
+                tokens = &tokens[block.consumed_tokens..];
             }
-            Token::CloseBracket => {
+            [Token::CloseBracket, ..] => {
                 ast.push_garbage(Garbage {
-                    offending_tokens: &tokens[i..i + 1],
+                    offending_tokens: &tokens[..1],
                     message: "unexpected quoted",
                 });
-                i += 1;
+                tokens = &tokens[1..];
             }
-            Token::Colon => {
+            [Token::Colon, ..] => {
                 ast.push_garbage(Garbage {
-                    offending_tokens: &tokens[i..i + 1],
+                    offending_tokens: &tokens[..1],
                     message: "unexpected colon",
                 });
-                i += 1;
+                tokens = &tokens[1..];
             }
-            Token::EqualSign => {
+            [Token::EqualSign, ..] => {
                 ast.push_garbage(Garbage {
-                    offending_tokens: &tokens[i..i + 1],
+                    offending_tokens: &tokens[..1],
                     message: "unexpected equal sign",
                 });
-                i += 1;
+                tokens = &tokens[1..];
             }
+            [] => break,
         }
     }
 
     return ast;
 }
 
-enum ParseBlock {
-    Node {
-        value: AstNode,
-        consumed_tokens: usize,
-    },
-    Garbage {
-        value: AstNode,
-        consumed_tokens: usize,
-    },
+struct ParseBlock {
+    value: AstNode,
+    consumed_tokens: usize,
 }
 
 fn parse_block(ast: &mut AST, tokens: &[Token]) -> ParseBlock {
@@ -259,10 +240,10 @@ fn parse_block(ast: &mut AST, tokens: &[Token]) -> ParseBlock {
             let attributes = attributes.value;
 
             let body = parse_body(ast, &tokens[consumed_tokens..]);
-            consumed_tokens += body.consumed_tokens();
-            let body = body.body();
+            consumed_tokens += body.consumed_tokens;
+            let body = body.value;
 
-            return ParseBlock::Node {
+            return ParseBlock {
                 value: ast.push_node(Node {
                     kind,
                     attributes,
@@ -271,7 +252,7 @@ fn parse_block(ast: &mut AST, tokens: &[Token]) -> ParseBlock {
                 consumed_tokens,
             };
         }
-        _ => ParseBlock::Garbage {
+        _ => ParseBlock {
             value: ast.push_garbage(Garbage {
                 offending_tokens: key,
                 message: "unexpected tokens",
@@ -343,7 +324,7 @@ impl ParseAttribute {
 
 fn parse_attribute(_ast: &mut AST, tokens: &[Token]) -> ParseAttribute {
     match tokens {
-        [Token::Text(name), Token::EqualSign, Token::Quoted(_), ..]=> ParseAttribute::Attribute {
+        [Token::Text(name), Token::EqualSign, Token::Quoted(_), ..] => ParseAttribute::Attribute {
             value: Attribute {
                 name,
                 value: &tokens[2..3],
@@ -360,49 +341,28 @@ fn parse_attribute(_ast: &mut AST, tokens: &[Token]) -> ParseAttribute {
     }
 }
 
-enum ParseBody {
-    Body {
-        value: *const [Token],
-        consumed_tokens: usize,
-    },
-    Garbage {
-        value: Garbage,
-        consumed_tokens: usize,
-    },
+struct ParseBody {
+    value: *const [Token],
+    consumed_tokens: usize,
 }
 
-impl ParseBody {
-    fn consumed_tokens(&self) -> usize {
-        return match self {
-            ParseBody::Body {
-                value: _,
-                consumed_tokens,
-            } => *consumed_tokens,
-            ParseBody::Garbage {
-                value: _,
-                consumed_tokens,
-            } => *consumed_tokens,
-        };
-    }
+fn parse_body(_ast: &mut AST, complete_tokens: &[Token]) -> ParseBody {
+    let mut consumed_tokens = 0;
 
-    fn body(self) -> *const [Token] {
-        match self {
-            Self::Body {
-                value,
-                consumed_tokens: _,
-            } => value,
-            _ => &[],
+    let mut tokens = complete_tokens;
+    while !tokens.is_empty() {
+        match tokens {
+            [Token::OpenBracket, Token::Text(_), Token::CloseBracket, ..] => break,
+            _ => {
+                consumed_tokens += 1;
+                tokens = &complete_tokens[consumed_tokens..];
+            }
         }
     }
-}
 
-fn parse_body(_ast: &mut AST, _tokens: &[Token]) -> ParseBody {
-    ParseBody::Garbage {
-        value: Garbage {
-            offending_tokens: &[],
-            message: "",
-        },
-        consumed_tokens: 1,
+    ParseBody {
+        value: &complete_tokens[..consumed_tokens],
+        consumed_tokens,
     }
 }
 
@@ -489,6 +449,163 @@ mod tests {
             ],
             body: &[],
         });
+        let ast = parse(&tokens);
+
+        assert_eq!(ast, expected_ast);
+    }
+
+    #[test]
+    fn can_parse_block_with_body() {
+        let tokens = [
+            Token::OpenBracket,
+            Token::Text("title"),
+            Token::CloseBracket,
+            //
+            Token::Text("foo"),
+            Token::EqualSign,
+            Token::Quoted("123"),
+            //
+            Token::Text("bar"),
+            Token::EqualSign,
+            Token::Quoted("42"),
+            //
+            Token::Text("some text body"),
+        ];
+
+        let mut expected_ast = AST::new();
+        let node_slot = expected_ast.reserve_slot();
+        expected_ast[node_slot] = expected_ast.push_node(Node {
+            kind: "title",
+            attributes: &[
+                Attribute {
+                    name: "foo",
+                    value: &[Token::Quoted("123")],
+                },
+                Attribute {
+                    name: "bar",
+                    value: &[Token::Quoted("42")],
+                },
+            ],
+            body: &[Token::Text("some text body")],
+        });
+        let ast = parse(&tokens);
+
+        assert_eq!(ast, expected_ast);
+    }
+
+    #[test]
+    fn can_parse_block_with_attributes_and_body() {
+        let tokens = [
+            Token::OpenBracket,
+            Token::Text("title"),
+            Token::CloseBracket,
+            //
+            Token::Text("foo"),
+        ];
+
+        let mut expected_ast = AST::new();
+        let node_slot = expected_ast.reserve_slot();
+        expected_ast[node_slot] = expected_ast.push_node(Node {
+            kind: "title",
+            attributes: &[],
+            body: &[Token::Text("foo")],
+        });
+        let ast = parse(&tokens);
+
+        assert_eq!(ast, expected_ast);
+    }
+
+    #[test]
+    fn can_parse_multiple_simple_blocks() {
+        let tokens = [
+            Token::OpenBracket,
+            Token::Text("title"),
+            Token::CloseBracket,
+            //
+            Token::OpenBracket,
+            Token::Text("color"),
+            Token::CloseBracket,
+        ];
+
+        let mut expected_ast = AST::new();
+
+        let node_slot = expected_ast.reserve_slot();
+        expected_ast[node_slot] = expected_ast.push_node(Node {
+            kind: "title",
+            attributes: &[],
+            body: &[],
+        });
+
+        let node_slot = expected_ast.reserve_slot();
+        expected_ast[node_slot] = expected_ast.push_node(Node {
+            kind: "color",
+            attributes: &[],
+            body: &[],
+        });
+
+        let ast = parse(&tokens);
+
+        assert_eq!(ast, expected_ast);
+    }
+
+    #[test]
+    fn can_parse_multiple_blocks_with_bodies_and_attributes() {
+        let tokens = [
+            Token::OpenBracket,
+            Token::Text("title"),
+            Token::CloseBracket,
+            //
+            Token::Text("weight"),
+            Token::EqualSign,
+            Token::Quoted("bold"),
+            //
+            Token::Text("Foobar"),
+            //
+            Token::OpenBracket,
+            Token::Text("color"),
+            Token::CloseBracket,
+            //
+            Token::Text("name"),
+            Token::EqualSign,
+            Token::Quoted("black"),
+            //
+            Token::OpenBracket,
+            Token::Text("lines"),
+            Token::CloseBracket,
+            //
+            Token::Text("some text content"),
+            //
+        ];
+
+        let mut expected_ast = AST::new();
+
+        let node_slot = expected_ast.reserve_slot();
+        expected_ast[node_slot] = expected_ast.push_node(Node {
+            kind: "title",
+            attributes: &[Attribute {
+                name: "weight",
+                value: &[Token::Quoted("bold")]
+            }],
+            body: &[Token::Text("Foobar")],
+        });
+
+        let node_slot = expected_ast.reserve_slot();
+        expected_ast[node_slot] = expected_ast.push_node(Node {
+            kind: "color",
+            attributes: &[Attribute {
+                name: "name",
+                value: &[Token::Quoted("black")],
+            }],
+            body: &[],
+        });
+
+        let node_slot = expected_ast.reserve_slot();
+        expected_ast[node_slot] = expected_ast.push_node(Node {
+            kind: "lines",
+            attributes: &[],
+            body: &[Token::Text("some text content")],
+        });
+
         let ast = parse(&tokens);
 
         assert_eq!(ast, expected_ast);
