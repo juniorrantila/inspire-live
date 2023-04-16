@@ -23,6 +23,10 @@ impl AST {
         }
     }
 
+    pub fn view(&self) -> &[AstNode] {
+        &self.ast
+    }
+
     fn push_node(&mut self, node: Node) -> AstNode {
         let index = self.nodes.len();
         self.nodes.push(node);
