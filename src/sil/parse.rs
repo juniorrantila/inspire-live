@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::ops::Index;
 use std::ops::IndexMut;
+use std::convert::From;
 
 use crate::lex::Token;
 
@@ -25,13 +26,13 @@ impl AST {
     fn push_node(&mut self, node: Node) -> AstNode {
         let index = self.nodes.len();
         self.nodes.push(node);
-        return AstNode::Node(index);
+        return AstNode::from(NodeId(index));
     }
 
     fn push_garbage(&mut self, garbage: Garbage) -> AstNode {
         let index = self.garbages.len();
         self.garbages.push(garbage);
-        return AstNode::Garbage(index);
+        return AstNode::from(GarbageId(index));
     }
 
     fn reserve_slot(&mut self) -> AstSlot {
@@ -68,14 +69,45 @@ impl IndexMut<AstSlot> for AST {
     }
 }
 
+impl Index<NodeId> for AST {
+    type Output = Node;
+    fn index(&self, index: NodeId) -> &Self::Output {
+        &self.nodes[index.0]
+    }
+}
+
+impl Index<GarbageId> for AST {
+    type Output = Garbage;
+    fn index(&self, index: GarbageId) -> &Self::Output {
+        &self.garbages[index.0]
+    }
+}
+
 #[derive(Debug, PartialEq)]
 struct AstSlot(usize);
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct NodeId(usize);
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct GarbageId(usize);
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AstNode {
-    Node(usize),
-    Garbage(usize),
+    Node(NodeId),
+    Garbage(GarbageId),
     Reserve,
+}
+
+impl From<NodeId> for AstNode {
+    fn from(id: NodeId) -> Self {
+        Self::Node(id)
+    }
+}
+impl From<GarbageId> for AstNode {
+    fn from(id: GarbageId) -> Self {
+        Self::Garbage(id)
+    }
 }
 
 struct Garbage {
