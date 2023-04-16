@@ -114,7 +114,7 @@ impl From<GarbageId> for AstNode {
     }
 }
 
-struct Garbage {
+pub struct Garbage {
     offending_tokens: *const [Token],
     message: &'static str,
 }
@@ -138,8 +138,8 @@ impl PartialEq for Garbage {
     }
 }
 
-struct Node {
-    kind: &'static str,
+pub struct Node {
+    pub kind: &'static str,
     attributes: *const [Attribute],
     body: *const [Token],
 }
