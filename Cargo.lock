@@ -1942,6 +1942,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "slide"
+version = "0.1.0"
+dependencies = [
+ "sil",
+]
+
+[[package]]
 name = "slides"
 version = "0.1.0"
 dependencies = [

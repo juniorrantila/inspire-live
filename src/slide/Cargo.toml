@@ -1,0 +1,10 @@
+[package]
+name = "slide"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "slide.rs"
+
+[dependencies]
+sil = { path = "../sil" }

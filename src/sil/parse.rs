@@ -1,7 +1,7 @@
+use std::convert::From;
 use std::fmt::Debug;
 use std::ops::Index;
 use std::ops::IndexMut;
-use std::convert::From;
 
 use crate::lex::Token;
 
@@ -27,7 +27,7 @@ impl AST {
         &self.ast
     }
 
-    fn push_node(&mut self, node: Node) -> AstNode {
+    pub fn push_node(&mut self, node: Node) -> AstNode {
         let index = self.nodes.len();
         self.nodes.push(node);
         return AstNode::from(NodeId(index));
@@ -39,7 +39,7 @@ impl AST {
         return AstNode::from(GarbageId(index));
     }
 
-    fn reserve_slot(&mut self) -> AstSlot {
+    pub fn reserve_slot(&mut self) -> AstSlot {
         let index = self.ast.len();
         self.ast.push(AstNode::Reserve);
         return AstSlot(index);
@@ -88,7 +88,7 @@ impl Index<GarbageId> for AST {
 }
 
 #[derive(Debug, PartialEq)]
-struct AstSlot(usize);
+pub struct AstSlot(usize);
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct NodeId(usize);
@@ -114,6 +114,7 @@ impl From<GarbageId> for AstNode {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct Garbage {
     offending_tokens: *const [Token],
     message: &'static str,
@@ -138,10 +139,11 @@ impl PartialEq for Garbage {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Node {
     pub kind: &'static str,
-    attributes: *const [Attribute],
-    body: *const [Token],
+    pub attributes: *const [Attribute],
+    pub body: *const [Token],
 }
 impl Node {
     fn attributes(&self) -> &[Attribute] {
@@ -150,6 +152,11 @@ impl Node {
 
     fn body(&self) -> &[Token] {
         unsafe { &*self.body } // Tokens are expected to outlive Node.
+    }
+
+    // FIXME: Combine all tokens into str
+    pub fn text(&self) -> &'static str {
+        self.body().first().unwrap_or(&Token::Text("")).text()
     }
 }
 impl PartialEq for Node {
@@ -170,9 +177,9 @@ impl Debug for Node {
     }
 }
 
-struct Attribute {
-    name: &'static str,
-    value: *const [Token],
+pub struct Attribute {
+    pub name: &'static str,
+    pub value: *const [Token],
 }
 impl Attribute {
     fn value(&self) -> &[Token] {
@@ -620,7 +627,7 @@ mod tests {
             kind: "title",
             attributes: &[Attribute {
                 name: "weight",
-                value: &[Token::Quoted("bold")]
+                value: &[Token::Quoted("bold")],
             }],
             body: &[Token::Text("Foobar")],
         });

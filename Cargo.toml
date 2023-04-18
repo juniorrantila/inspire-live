@@ -9,6 +9,7 @@ members = [
     "src/display",
     "src/sil",
     "src/slides",
+    "src/slide",
 ]
 
 [dependencies]
