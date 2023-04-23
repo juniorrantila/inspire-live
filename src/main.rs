@@ -17,13 +17,7 @@ use bevy::DefaultPlugins;
 use bevy_egui::{EguiContext, EguiPlugin};
 use root_path::RootPath;
 
-use sil::lex;
-
 fn main() -> Result<(), &'static str> {
-    let input = "[title]\nFoobar\n\n[text]\ncolor = 123";
-    let tokens = lex(&input);
-    println!("{:?}", tokens);
-
     bevy::prelude::App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
