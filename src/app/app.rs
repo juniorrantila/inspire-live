@@ -15,6 +15,8 @@ pub struct App {
     slides: Slides,
 }
 
+unsafe impl Send for App {}
+
 impl App {
     pub fn from(root: RootPath) -> Self {
         Self {
@@ -30,7 +32,10 @@ impl App {
     }
 
     fn update_slides_if_needed(&mut self) {
-        self.slides.update_if_needed()
+        self.slides.update_if_needed();
+        if self.output.content != self.preview.content {
+            self.output.content = self.preview.content.clone();
+        }
     }
 
     pub fn draw_control_window(&mut self, ctx: &egui::Context) {
@@ -81,7 +86,7 @@ impl App {
             ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
                 ui.add_sized(
                     ui.available_size(),
-                    Label::new(self.output().content.as_str()),
+                    &mut self.output
                 );
             });
         });

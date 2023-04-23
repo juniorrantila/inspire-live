@@ -24,8 +24,10 @@ fn main() -> Result<(), &'static str> {
         .insert_resource(app::App::from(
             fetch_root_folder().ok_or("invalid root path")?,
         ))
-        .add_startup_system(create_display_window)
-        .add_systems((control_window, display_window))
+        // .add_startup_system(create_display_window)
+        .add_system(control_window)
+        .add_system(display_window)
+        .add_system(bevy::window::close_on_esc)
         .run();
 
     Ok(())
@@ -50,6 +52,7 @@ fn create_display_window(mut commands: Commands) {
             ..Default::default()
         })
         .id();
+
     commands.spawn(Camera3dBundle {
         camera: Camera {
             target: RenderTarget::Window(WindowRef::Entity(display_window_id)),

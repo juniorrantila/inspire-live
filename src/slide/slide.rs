@@ -5,7 +5,9 @@ use sil::Garbage;
 use sil::Node;
 use sil::AST;
 
-struct Layers(Vec<Layer>);
+#[derive(Default)]
+pub struct Layers(Vec<Layer>);
+
 impl From<&AST> for Layers {
     fn from(ast: &AST) -> Self {
         let mut layers = Vec::new();
@@ -28,6 +30,12 @@ impl Index<usize> for Layers {
     type Output = Layer;
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
+    }
+}
+
+impl Layers {
+    pub fn view(&self) -> &[Layer] {
+        self.0.as_slice()
     }
 }
 
@@ -137,6 +145,8 @@ pub enum FontStyle {
     Monospace,
     Normal,
 }
+
+unsafe impl Send for Layer {}
 
 #[cfg(test)]
 mod tests {

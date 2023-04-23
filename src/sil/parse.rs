@@ -123,6 +123,10 @@ impl Garbage {
     fn offending_tokens(&self) -> &[Token] {
         unsafe { &*self.offending_tokens } // Tokens are expected to outlive Garbage.
     }
+    pub fn text(&self) -> &str {
+        // FIXME: Consolidate tokens
+        self.offending_tokens()[0].text()
+    }
 }
 impl Debug for Garbage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -273,11 +277,20 @@ struct ParseBlock {
 }
 
 fn parse_block(ast: &mut AST, tokens: &[Token]) -> ParseBlock {
+    if tokens.len() < 3 {
+        return ParseBlock {
+            value: ast.push_garbage(Garbage {
+                offending_tokens: tokens,
+                message: "too few tokens",
+            }),
+            consumed_tokens: tokens.len(),
+        };
+    }
+
     let mut consumed_tokens = 0;
-    let key = &tokens[0..3];
-    match key {
-        [Token::OpenBracket, Token::Text(kind), Token::CloseBracket] => {
-            consumed_tokens += key.len();
+    match tokens {
+        [Token::OpenBracket, Token::Text(kind), Token::CloseBracket, ..] => {
+            consumed_tokens += 3;
             let attributes = parse_attributes(ast, &tokens[consumed_tokens..]);
             consumed_tokens += attributes.consumed_tokens;
             let attributes = attributes.value;
@@ -297,10 +310,10 @@ fn parse_block(ast: &mut AST, tokens: &[Token]) -> ParseBlock {
         }
         _ => ParseBlock {
             value: ast.push_garbage(Garbage {
-                offending_tokens: key,
+                offending_tokens: tokens,
                 message: "unexpected tokens",
             }),
-            consumed_tokens: key.len(),
+            consumed_tokens: tokens.len(),
         },
     }
 }
@@ -408,6 +421,12 @@ fn parse_body(_ast: &mut AST, complete_tokens: &[Token]) -> ParseBody {
         consumed_tokens,
     }
 }
+
+unsafe impl Send for AST {}
+unsafe impl Send for Node {}
+unsafe impl Sync for Node {}
+unsafe impl Sync for Garbage {}
+unsafe impl Sync for Attribute {}
 
 #[cfg(test)]
 mod tests {
