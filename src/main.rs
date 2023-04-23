@@ -15,9 +15,6 @@ use bevy::window::WindowRef;
 use bevy::window::WindowResolution;
 use bevy::DefaultPlugins;
 use bevy_egui::{EguiContext, EguiPlugin};
-use egui::Align;
-use egui::Label;
-use egui::Layout;
 use root_path::RootPath;
 
 use sil::lex;
@@ -74,20 +71,13 @@ fn control_window(
     mut egui_ctx: Query<&mut EguiContext, With<PrimaryWindow>>,
 ) {
     let Ok(mut ctx) = egui_ctx.get_single_mut() else { return; };
-    app.as_mut().update(ctx.get_mut());
+    app.as_mut().draw_control_window(ctx.get_mut());
 }
 
 fn display_window(
-    app: ResMut<app::App>,
+    mut app: ResMut<app::App>,
     mut egui_ctx: Query<&mut EguiContext, Without<PrimaryWindow>>,
 ) {
     let Ok(mut ctx) = egui_ctx.get_single_mut() else { return; };
-    egui::CentralPanel::default().show(ctx.get_mut(), |ui| {
-        ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-            ui.add_sized(
-                ui.available_size(),
-                Label::new(app.as_ref().output().content.as_str()),
-            );
-        });
-    });
+    app.as_mut().draw_display_window(ctx.get_mut());
 }

@@ -1,5 +1,5 @@
 use bevy::prelude::Resource;
-use egui::{Align, Layout, TextStyle};
+use egui::{Align, Layout, TextStyle, Label};
 
 use root_path::RootPath;
 use display::Display;
@@ -33,7 +33,7 @@ impl App {
         self.slides.update_if_needed()
     }
 
-    pub fn update(&mut self, ctx: &egui::Context) {
+    pub fn draw_control_window(&mut self, ctx: &egui::Context) {
         self.update_slides_if_needed();
 
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -72,6 +72,17 @@ impl App {
                     )
                     .labelled_by(label.id);
                 });
+            });
+        });
+    }
+
+    pub fn draw_display_window(&mut self, ctx: &egui::Context) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                ui.add_sized(
+                    ui.available_size(),
+                    Label::new(self.output().content.as_str()),
+                );
             });
         });
     }
