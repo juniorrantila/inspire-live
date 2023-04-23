@@ -175,4 +175,30 @@ mod tests {
             })
         );
     }
+
+    #[test]
+    fn can_parse_node_with_font_size_attribute() {
+        let mut ast = AST::new();
+
+        let node_slot = ast.reserve_slot();
+        ast[node_slot] = ast.push_node(Node {
+            kind: "title",
+            attributes: &[Attribute{
+                name: "font_size",
+                value: &[Token::Text("11")],
+            }],
+            body: &[Token::Text("Foobar")],
+        });
+
+        let layers = Layers::from(&ast);
+        assert_eq!(
+            layers[0],
+            Layer::Title(TitleLayer {
+                text: "Foobar",
+                font_size: 11.0,
+                font_weight: FontWeight::Bold,
+                color: 0x00000000,
+            })
+        );
+    }
 }
