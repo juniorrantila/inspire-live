@@ -12,7 +12,6 @@ struct Slide {
 
 pub struct Display {
     pub content: String,
-    old_content: String,
     slide: Option<Slide>
 }
 
@@ -20,30 +19,29 @@ impl Default for Display {
     fn default() -> Self {
         Self {
             content: "Lorem ipsum dolor sit amet".to_owned(),
-            old_content: "".to_owned(),
             slide: None,
         }
     }
 }
 
+impl Display {
+    pub fn update(&mut self) {
+        let mut slide = Slide {
+            tokens: Vec::new(),
+            ast: AST::new(),
+            layers: Layers::default()
+        };
+        slide.tokens = unsafe {
+            sil::lex(&*(self.content.as_str() as *const str))
+        };
+        slide.ast = sil::parse(&slide.tokens);
+        slide.layers = Layers::from(&slide.ast);
+        self.slide = Some(slide);
+    }
+}
+
 impl Widget for &mut Display {
     fn ui(self, ui: &mut Ui) -> Response {
-        if self.content != self.old_content {
-            self.old_content = self.content.clone();
-
-            let mut slide = Slide {
-                tokens: Vec::new(),
-                ast: AST::new(),
-                layers: Layers::default()
-            };
-            slide.tokens = unsafe {
-                sil::lex(&*(self.content.as_str() as *const str)).unwrap_or(Vec::new())
-            };
-            slide.ast = sil::parse(&slide.tokens);
-            slide.layers = Layers::from(&slide.ast);
-            self.slide = Some(slide);
-        }
-
         if let Some(slide) = &self.slide {
             if slide.layers.view().is_empty() {
                 return ui.label(self.content.as_str());

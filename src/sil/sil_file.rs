@@ -12,7 +12,7 @@ pub struct SilFile {
 
 impl SilFile {
     pub fn from(content: &'static str) -> Option<Self> {
-        let tokens = lex(content)?;
+        let tokens = lex(content);
         let ast = parse(&tokens);
         let _typechecked_ast = typecheck(&ast);
 
