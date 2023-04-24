@@ -189,6 +189,10 @@ impl Attribute {
     fn value(&self) -> &[Token] {
         unsafe { &*self.value } // Tokens are expected to outlive Attribute.
     }
+
+    pub fn value_text(&self) -> &str {
+        self.value()[0].text() // FIXME: Consolidate tokens
+    }
 }
 impl PartialEq for Attribute {
     fn eq(&self, other: &Self) -> bool {
