@@ -209,11 +209,6 @@ impl Debug for Attribute {
     }
 }
 
-struct ParseValue<T> {
-    value: T,
-    consumed_tokens: usize,
-}
-
 pub fn parse(complete_tokens: &[Token]) -> AST {
     let mut ast = AST::new();
 
