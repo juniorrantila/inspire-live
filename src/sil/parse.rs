@@ -114,6 +114,21 @@ impl From<GarbageId> for AstNode {
     }
 }
 
+fn consolidate_tokens_into_string(tokens: &[Token]) -> &'static str {
+    if tokens.is_empty() {
+        return "";
+    }
+    if tokens.len() == 1 {
+        return tokens[0].text();
+    }
+
+    let mut res = tokens[0].text();
+    for token in &tokens[1..] {
+        res = unsafe { res.get_unchecked(0..res.len() + token.text().len()) };
+    }
+    return res;
+}
+
 #[derive(Clone, Copy)]
 pub struct Garbage {
     offending_tokens: *const [Token],
@@ -124,8 +139,7 @@ impl Garbage {
         unsafe { &*self.offending_tokens } // Tokens are expected to outlive Garbage.
     }
     pub fn text(&self) -> &str {
-        // FIXME: Consolidate tokens
-        self.offending_tokens()[0].text()
+        return consolidate_tokens_into_string(self.offending_tokens());
     }
 }
 impl Debug for Garbage {
@@ -158,9 +172,8 @@ impl Node {
         unsafe { &*self.body } // Tokens are expected to outlive Node.
     }
 
-    // FIXME: Combine all tokens into str
     pub fn text(&self) -> &'static str {
-        self.body().first().unwrap_or(&Token::Text("")).text()
+        return consolidate_tokens_into_string(self.body());
     }
 }
 impl PartialEq for Node {
@@ -191,7 +204,7 @@ impl Attribute {
     }
 
     pub fn value_text(&self) -> &str {
-        self.value()[0].text() // FIXME: Consolidate tokens
+        return consolidate_tokens_into_string(self.value());
     }
 }
 impl PartialEq for Attribute {
@@ -379,20 +392,24 @@ impl ParseAttribute {
 
 fn parse_attribute(_ast: &mut AST, tokens: &[Token]) -> ParseAttribute {
     match tokens {
-        [Token::Text(name), Token::EqualSign(_), Token::Quoted(_), ..] => ParseAttribute::Attribute {
-            value: Attribute {
-                name,
-                value: &tokens[2..3],
-            },
-            consumed_tokens: 3,
-        },
-        [Token::Text(name), Token::EqualSign(_), Token::Number(_), ..] => ParseAttribute::Attribute {
-            value: Attribute {
-                name,
-                value: &tokens[2..3],
-            },
-            consumed_tokens: 3,
-        },
+        [Token::Text(name), Token::EqualSign(_), Token::Quoted(_), ..] => {
+            ParseAttribute::Attribute {
+                value: Attribute {
+                    name,
+                    value: &tokens[2..3],
+                },
+                consumed_tokens: 3,
+            }
+        }
+        [Token::Text(name), Token::EqualSign(_), Token::Number(_), ..] => {
+            ParseAttribute::Attribute {
+                value: Attribute {
+                    name,
+                    value: &tokens[2..3],
+                },
+                consumed_tokens: 3,
+            }
+        }
         _ => ParseAttribute::Garbage {
             value: Garbage {
                 offending_tokens: &tokens[0..1],
