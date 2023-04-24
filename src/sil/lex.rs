@@ -25,6 +25,16 @@ impl Token {
     }
 }
 
+fn remove_quotes(quoted: &'static str) -> &'static str {
+    if quoted.len() < 2 {
+        return &quoted[0..0];
+    }
+    if quoted.ends_with("\"") {
+        return &quoted[1..quoted.len() - 1];
+    }
+    return &quoted[1..];
+}
+
 pub fn lex(mut content: &'static str) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
 
@@ -42,7 +52,7 @@ pub fn lex(mut content: &'static str) -> Vec<Token> {
 
             [b'"', ..] => {
                 let res = lex_quoted(content);
-                tokens.push(Token::Quoted(&res[1..res.len() - 1]));
+                tokens.push(Token::Quoted(remove_quotes(res)));
                 content = &content[res.len()..];
             }
 
@@ -120,19 +130,22 @@ fn lex_quoted(content: &str) -> &str {
 
     let mut end_index = 1;
 
-    let mut chars = quoted.chars();
-    while let Some(c) = chars.next() {
-        match c {
-            '"' => {
+    let mut bytes = quoted.as_bytes();
+    while !bytes.is_empty() {
+        match bytes {
+            [b'"', ..] => {
+                end_index += 1;
                 break;
             }
-            _ => {
+            [_, ..] => {
                 end_index += 1;
+                bytes = &bytes[1..];
             }
+            [] => break,
         };
     }
 
-    return &content[..=end_index];
+    return &content[..end_index];
 }
 
 pub fn clean_up_for_attribute_key(content: &str) -> &str {
@@ -189,6 +202,16 @@ mod tests {
                 Token::Text(")")
             ]
         );
+    }
+
+    #[test]
+    fn can_lex_quoted() {
+        assert_eq!(lex("\"black\""), [Token::Quoted("black")]);
+    }
+
+    #[test]
+    fn can_lex_incomplete_quoted() {
+        assert_eq!(lex("\"black"), [Token::Quoted("black")]);
     }
 
     #[test]
