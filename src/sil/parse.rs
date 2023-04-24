@@ -386,6 +386,13 @@ fn parse_attribute(_ast: &mut AST, tokens: &[Token]) -> ParseAttribute {
             },
             consumed_tokens: 3,
         },
+        [Token::Text(name), Token::EqualSign, Token::Number(_), ..] => ParseAttribute::Attribute {
+            value: Attribute {
+                name,
+                value: &tokens[2..3],
+            },
+            consumed_tokens: 3,
+        },
         _ => ParseAttribute::Garbage {
             value: Garbage {
                 offending_tokens: &tokens[0..1],
