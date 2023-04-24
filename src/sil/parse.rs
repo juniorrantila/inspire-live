@@ -150,7 +150,7 @@ pub struct Node {
     pub body: *const [Token],
 }
 impl Node {
-    fn attributes(&self) -> &[Attribute] {
+    pub fn attributes(&self) -> &[Attribute] {
         unsafe { &*self.attributes } // Tokens are expected to outlive Node.
     }
 
