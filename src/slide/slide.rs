@@ -4,6 +4,7 @@ use sil::AstNode;
 use sil::Garbage;
 use sil::Node;
 use sil::AST;
+use sil::clean_up_for_attribute_key;
 
 #[derive(Default)]
 pub struct Layers(Vec<Layer>);
@@ -78,6 +79,17 @@ impl From<&Node> for TextLayer {
     fn from(value: &Node) -> Self {
         let mut res = Self::default();
         res.text = value.text();
+        for attribute in value.attributes() {
+            match attribute.name {
+                "font_size" => {
+                    let text = attribute.value_text();
+                    res.font_size = text.parse().unwrap_or(40.0); // FIXME: Make this a garbage attribute.
+                }
+                _ => {
+                    // FIXME: Add garbage attribute
+                }
+            }
+        }
         return res;
     }
 }
@@ -105,6 +117,17 @@ impl From<&Node> for TitleLayer {
     fn from(value: &Node) -> Self {
         let mut res = Self::default();
         res.text = value.text();
+        for attribute in value.attributes() {
+            match clean_up_for_attribute_key(attribute.name) {
+                "font_size" => {
+                    let text = attribute.value_text();
+                    res.font_size = text.parse().unwrap_or(16.0); // FIXME: Make this a garbage attribute.
+                }
+                _ => {
+                    // FIXME: Add garbage attribute
+                }
+            }
+        }
         return res;
     }
 }
@@ -183,9 +206,9 @@ mod tests {
         let node_slot = ast.reserve_slot();
         ast[node_slot] = ast.push_node(Node {
             kind: "title",
-            attributes: &[Attribute{
+            attributes: &[Attribute {
                 name: "font_size",
-                value: &[Token::Text("11")],
+                value: &[Token::Number("11")],
             }],
             body: &[Token::Text("Foobar")],
         });
