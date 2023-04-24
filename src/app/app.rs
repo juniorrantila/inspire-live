@@ -13,6 +13,8 @@ pub struct App {
     output: Display,
 
     slides: Slides,
+
+    content: String,
 }
 
 unsafe impl Send for App {}
@@ -24,6 +26,8 @@ impl App {
             preview: Display::default(),
             output: Display::default(),
             slides: Slides::default(),
+
+            content: "".to_owned(),
         }
     }
 
@@ -33,8 +37,9 @@ impl App {
 
     fn update_slides_if_needed(&mut self) {
         self.slides.update_if_needed();
-        if self.output.content != self.preview.content {
-            self.output.content = self.preview.content.clone();
+        if self.content != self.preview.content {
+            self.preview.content = self.content.clone();
+            self.preview.update();
         }
     }
 
@@ -70,7 +75,7 @@ impl App {
                     let label = ui.heading("edit");
                     ui.add_sized(
                         ui.available_size(),
-                        egui::TextEdit::multiline(&mut self.preview.content)
+                        egui::TextEdit::multiline(&mut self.content)
                             .clip_text(true)
                             .font(TextStyle::Monospace)
                             .lock_focus(false),
