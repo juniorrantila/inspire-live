@@ -80,7 +80,7 @@ impl From<&Node> for TextLayer {
         let mut res = Self::default();
         res.text = value.text();
         for attribute in value.attributes() {
-            match attribute.name {
+            match attribute.name() {
                 "font_size" => {
                     let text = attribute.value_text();
                     res.font_size = text.parse().unwrap_or(40.0); // FIXME: Make this a garbage attribute.
@@ -124,7 +124,7 @@ impl From<&Node> for TitleLayer {
         let mut res = Self::default();
         res.text = value.text();
         for attribute in value.attributes() {
-            match clean_up_for_attribute_key(attribute.name) {
+            match attribute.name() {
                 "font_size" => {
                     let text = attribute.value_text();
                     res.font_size = text.parse().unwrap_or(16.0); // FIXME: Make this a garbage attribute.

@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::ops::Index;
 use std::ops::IndexMut;
 
+use crate::clean_up_for_attribute_key;
 use crate::lex::Token;
 
 pub struct AST {
@@ -205,6 +206,10 @@ impl Attribute {
 
     pub fn value_text(&self) -> &str {
         return consolidate_tokens_into_string(self.value());
+    }
+
+    pub fn name(&self) -> &str {
+        return clean_up_for_attribute_key(self.name);
     }
 }
 impl PartialEq for Attribute {
