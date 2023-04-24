@@ -44,7 +44,7 @@ impl Widget for &mut Display {
     fn ui(self, ui: &mut Ui) -> Response {
         if let Some(slide) = &self.slide {
             if slide.layers.view().is_empty() {
-                return ui.label(self.content.as_str());
+                return ui.monospace(self.content.as_str());
             }
 
             let mut ui = ui.child_ui(ui.max_rect(), Layout::top_down(Align::Center));
