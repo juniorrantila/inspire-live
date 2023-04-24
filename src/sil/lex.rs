@@ -4,11 +4,11 @@ pub enum Token {
     Text(&'static str),
     Quoted(&'static str),
 
-    OpenBracket,
-    CloseBracket,
+    OpenBracket(&'static str),
+    CloseBracket(&'static str),
 
-    Colon,
-    EqualSign,
+    Colon(&'static str),
+    EqualSign(&'static str),
 }
 
 impl Token {
@@ -17,10 +17,10 @@ impl Token {
             Token::Number(text) => text,
             Token::Text(text) => text,
             Token::Quoted(text) => text,
-            Token::OpenBracket => "[",
-            Token::CloseBracket => "]",
-            Token::Colon => ":",
-            Token::EqualSign => "=",
+            Token::OpenBracket(text) => text,
+            Token::CloseBracket(text) => text,
+            Token::Colon(text) => text,
+            Token::EqualSign(text) => text,
         }
     }
 }
@@ -47,22 +47,22 @@ pub fn lex(mut content: &'static str) -> Vec<Token> {
             }
 
             [b'[', ..] => {
-                tokens.push(Token::OpenBracket);
+                tokens.push(Token::OpenBracket(&content[..1]));
                 content = &content[1..];
             }
 
             [b']', ..] => {
-                tokens.push(Token::CloseBracket);
+                tokens.push(Token::CloseBracket(&content[..1]));
                 content = &content[1..];
             }
 
             [b':', ..] => {
-                tokens.push(Token::Colon);
+                tokens.push(Token::Colon(&content[..1]));
                 content = &content[1..];
             }
 
             [b'=', ..] => {
-                tokens.push(Token::EqualSign);
+                tokens.push(Token::EqualSign(&content[..1]));
                 content = &content[1..];
             }
 
@@ -172,20 +172,20 @@ mod tests {
         assert_eq!(
             tokens,
             [
-                Token::OpenBracket,
+                Token::OpenBracket("["),
                 Token::Text("title"),
-                Token::CloseBracket,
+                Token::CloseBracket("]"),
                 Token::Text("Foobar"),
-                Token::OpenBracket,
+                Token::OpenBracket("["),
                 Token::Text("text"),
-                Token::CloseBracket,
+                Token::CloseBracket("]"),
                 Token::Text("color "),
-                Token::EqualSign,
+                Token::EqualSign("="),
                 Token::Number("13.37"),
                 Token::Number("19.84"),
                 Token::Number("42"),
                 Token::Text("Hello there "),
-                Token::Colon,
+                Token::Colon(":"),
                 Token::Text(")")
             ]
         );
@@ -198,20 +198,20 @@ mod tests {
         assert_eq!(
             tokens,
             [
-                Token::OpenBracket,
+                Token::OpenBracket("["),
                 Token::Text("title"),
-                Token::CloseBracket,
+                Token::CloseBracket("]"),
                 Token::Text("Fööbär"),
-                Token::OpenBracket,
+                Token::OpenBracket("["),
                 Token::Text("text"),
-                Token::CloseBracket,
+                Token::CloseBracket("]"),
                 Token::Text("cölår "),
-                Token::EqualSign,
+                Token::EqualSign("="),
                 Token::Number("13.37"),
                 Token::Number("19.84"),
                 Token::Number("42"),
                 Token::Text("Hallå där "),
-                Token::Colon,
+                Token::Colon(":"),
                 Token::Text(")")
             ]
         );
@@ -224,20 +224,20 @@ mod tests {
         assert_eq!(
             tokens,
             [
-                Token::OpenBracket,
+                Token::OpenBracket("["),
                 Token::Text("title"),
-                Token::CloseBracket,
+                Token::CloseBracket("]"),
                 Token::Text("Foobar"),
-                Token::OpenBracket,
+                Token::OpenBracket("["),
                 Token::Text("text"),
-                Token::CloseBracket,
+                Token::CloseBracket("]"),
                 Token::Text("color "),
-                Token::EqualSign,
+                Token::EqualSign("="),
                 Token::Number("13.37"),
                 Token::Number("19.84"),
                 Token::Number("42"),
                 Token::Text("Hello there "),
-                Token::Colon,
+                Token::Colon(":"),
                 Token::Text(")")
             ]
         );
@@ -257,20 +257,20 @@ Hello there :)
         assert_eq!(
             tokens,
             [
-                Token::OpenBracket,
+                Token::OpenBracket("["),
                 Token::Text("title"),
-                Token::CloseBracket,
+                Token::CloseBracket("]"),
                 Token::Text("Foobar"),
-                Token::OpenBracket,
+                Token::OpenBracket("["),
                 Token::Text("text"),
-                Token::CloseBracket,
+                Token::CloseBracket("]"),
                 Token::Text("color "),
-                Token::EqualSign,
+                Token::EqualSign("="),
                 Token::Number("13.37"),
                 Token::Number("19.84"),
                 Token::Number("42"),
                 Token::Text("Hello there "),
-                Token::Colon,
+                Token::Colon(":"),
                 Token::Text(")")
             ]
         );
@@ -292,20 +292,20 @@ Hello there :)
         assert_eq!(
             tokens,
             [
-                Token::OpenBracket,
+                Token::OpenBracket("["),
                 Token::Text("title"),
-                Token::CloseBracket,
+                Token::CloseBracket("]"),
                 Token::Text("This text is the same node\n\nas this text."),
-                Token::OpenBracket,
+                Token::OpenBracket("["),
                 Token::Text("text"),
-                Token::CloseBracket,
+                Token::CloseBracket("]"),
                 Token::Text("color "),
-                Token::EqualSign,
+                Token::EqualSign("="),
                 Token::Number("13.37"),
                 Token::Number("19.84"),
                 Token::Number("42"),
                 Token::Text("Hello there "),
-                Token::Colon,
+                Token::Colon(":"),
                 Token::Text(")")
             ]
         );

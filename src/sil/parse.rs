@@ -236,27 +236,27 @@ pub fn parse(complete_tokens: &[Token]) -> AST {
                 });
                 tokens = &tokens[1..];
             }
-            [Token::OpenBracket, ..] => {
+            [Token::OpenBracket(_), ..] => {
                 let slot = ast.reserve_slot();
                 let block = parse_block(&mut ast, tokens);
                 ast[slot] = block.value;
                 tokens = &tokens[block.consumed_tokens..];
             }
-            [Token::CloseBracket, ..] => {
+            [Token::CloseBracket(_), ..] => {
                 ast.push_garbage(Garbage {
                     offending_tokens: &tokens[..1],
                     message: "unexpected quoted",
                 });
                 tokens = &tokens[1..];
             }
-            [Token::Colon, ..] => {
+            [Token::Colon(_), ..] => {
                 ast.push_garbage(Garbage {
                     offending_tokens: &tokens[..1],
                     message: "unexpected colon",
                 });
                 tokens = &tokens[1..];
             }
-            [Token::EqualSign, ..] => {
+            [Token::EqualSign(_), ..] => {
                 ast.push_garbage(Garbage {
                     offending_tokens: &tokens[..1],
                     message: "unexpected equal sign",
@@ -288,7 +288,7 @@ fn parse_block(ast: &mut AST, tokens: &[Token]) -> ParseBlock {
 
     let mut consumed_tokens = 0;
     match tokens {
-        [Token::OpenBracket, Token::Text(kind), Token::CloseBracket, ..] => {
+        [Token::OpenBracket(_), Token::Text(kind), Token::CloseBracket(_), ..] => {
             consumed_tokens += 3;
             let attributes = parse_attributes(ast, &tokens[consumed_tokens..]);
             consumed_tokens += attributes.consumed_tokens;
@@ -329,7 +329,7 @@ fn parse_attributes(ast: &mut AST, complete_tokens: &[Token]) -> ParseAttributes
     let mut tokens = complete_tokens;
     while !tokens.is_empty() {
         match tokens {
-            [Token::Text(_), Token::EqualSign, ..] => {
+            [Token::Text(_), Token::EqualSign(_), ..] => {
                 let attribute = parse_attribute(ast, tokens);
                 consumed_tokens += attribute.consumed_tokens();
                 tokens = &complete_tokens[consumed_tokens..];
@@ -379,14 +379,14 @@ impl ParseAttribute {
 
 fn parse_attribute(_ast: &mut AST, tokens: &[Token]) -> ParseAttribute {
     match tokens {
-        [Token::Text(name), Token::EqualSign, Token::Quoted(_), ..] => ParseAttribute::Attribute {
+        [Token::Text(name), Token::EqualSign(_), Token::Quoted(_), ..] => ParseAttribute::Attribute {
             value: Attribute {
                 name,
                 value: &tokens[2..3],
             },
             consumed_tokens: 3,
         },
-        [Token::Text(name), Token::EqualSign, Token::Number(_), ..] => ParseAttribute::Attribute {
+        [Token::Text(name), Token::EqualSign(_), Token::Number(_), ..] => ParseAttribute::Attribute {
             value: Attribute {
                 name,
                 value: &tokens[2..3],
@@ -414,7 +414,7 @@ fn parse_body(_ast: &mut AST, complete_tokens: &[Token]) -> ParseBody {
     let mut tokens = complete_tokens;
     while !tokens.is_empty() {
         match tokens {
-            [Token::OpenBracket, Token::Text(_), Token::CloseBracket, ..] => break,
+            [Token::OpenBracket(_), Token::Text(_), Token::CloseBracket(_), ..] => break,
             _ => {
                 consumed_tokens += 1;
                 tokens = &complete_tokens[consumed_tokens..];
@@ -441,9 +441,9 @@ mod tests {
     #[test]
     fn can_parse_block() {
         let tokens = [
-            Token::OpenBracket,
+            Token::OpenBracket("["),
             Token::Text("title"),
-            Token::CloseBracket,
+            Token::CloseBracket("]"),
         ];
 
         let mut expected_ast = AST::new();
@@ -461,12 +461,12 @@ mod tests {
     #[test]
     fn can_parse_block_with_single_attribute() {
         let tokens = [
-            Token::OpenBracket,
+            Token::OpenBracket("["),
             Token::Text("title"),
-            Token::CloseBracket,
+            Token::CloseBracket("]"),
             //
             Token::Text("foo"),
-            Token::EqualSign,
+            Token::EqualSign("="),
             Token::Quoted("123"),
         ];
 
@@ -488,16 +488,16 @@ mod tests {
     #[test]
     fn can_parse_block_with_two_attributes() {
         let tokens = [
-            Token::OpenBracket,
+            Token::OpenBracket("["),
             Token::Text("title"),
-            Token::CloseBracket,
+            Token::CloseBracket("]"),
             //
             Token::Text("foo"),
-            Token::EqualSign,
+            Token::EqualSign("="),
             Token::Quoted("123"),
             //
             Token::Text("bar"),
-            Token::EqualSign,
+            Token::EqualSign("="),
             Token::Quoted("42"),
         ];
 
@@ -525,16 +525,16 @@ mod tests {
     #[test]
     fn can_parse_block_with_body() {
         let tokens = [
-            Token::OpenBracket,
+            Token::OpenBracket("["),
             Token::Text("title"),
-            Token::CloseBracket,
+            Token::CloseBracket("]"),
             //
             Token::Text("foo"),
-            Token::EqualSign,
+            Token::EqualSign("="),
             Token::Quoted("123"),
             //
             Token::Text("bar"),
-            Token::EqualSign,
+            Token::EqualSign("="),
             Token::Quoted("42"),
             //
             Token::Text("some text body"),
@@ -564,9 +564,9 @@ mod tests {
     #[test]
     fn can_parse_block_with_attributes_and_body() {
         let tokens = [
-            Token::OpenBracket,
+            Token::OpenBracket("["),
             Token::Text("title"),
-            Token::CloseBracket,
+            Token::CloseBracket("]"),
             //
             Token::Text("foo"),
         ];
@@ -586,13 +586,13 @@ mod tests {
     #[test]
     fn can_parse_multiple_simple_blocks() {
         let tokens = [
-            Token::OpenBracket,
+            Token::OpenBracket("["),
             Token::Text("title"),
-            Token::CloseBracket,
+            Token::CloseBracket("]"),
             //
-            Token::OpenBracket,
+            Token::OpenBracket("["),
             Token::Text("color"),
-            Token::CloseBracket,
+            Token::CloseBracket("]"),
         ];
 
         let mut expected_ast = AST::new();
@@ -619,27 +619,27 @@ mod tests {
     #[test]
     fn can_parse_multiple_blocks_with_bodies_and_attributes() {
         let tokens = [
-            Token::OpenBracket,
+            Token::OpenBracket("["),
             Token::Text("title"),
-            Token::CloseBracket,
+            Token::CloseBracket("]"),
             //
             Token::Text("weight"),
-            Token::EqualSign,
+            Token::EqualSign("="),
             Token::Quoted("bold"),
             //
             Token::Text("Foobar"),
             //
-            Token::OpenBracket,
+            Token::OpenBracket("["),
             Token::Text("color"),
-            Token::CloseBracket,
+            Token::CloseBracket("]"),
             //
             Token::Text("name"),
-            Token::EqualSign,
+            Token::EqualSign("="),
             Token::Quoted("black"),
             //
-            Token::OpenBracket,
+            Token::OpenBracket("["),
             Token::Text("lines"),
-            Token::CloseBracket,
+            Token::CloseBracket("]"),
             //
             Token::Text("some text content"),
             //
