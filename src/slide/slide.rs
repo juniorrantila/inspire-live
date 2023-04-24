@@ -84,6 +84,12 @@ impl From<&Node> for TextLayer {
                 "font_size" => {
                     let text = attribute.value_text();
                     res.font_size = text.parse().unwrap_or(40.0); // FIXME: Make this a garbage attribute.
+                    if res.font_size == 0.0 {
+                        res.font_size = 1.0;
+                    }
+                    if res.font_size > 100.0 {
+                        res.font_size = 100.0
+                    }
                 }
                 _ => {
                     // FIXME: Add garbage attribute
@@ -122,6 +128,12 @@ impl From<&Node> for TitleLayer {
                 "font_size" => {
                     let text = attribute.value_text();
                     res.font_size = text.parse().unwrap_or(16.0); // FIXME: Make this a garbage attribute.
+                    if res.font_size == 0.0 {
+                        res.font_size = 1.0;
+                    }
+                    if res.font_size > 100.0 {
+                        res.font_size = 100.0
+                    }
                 }
                 _ => {
                     // FIXME: Add garbage attribute
