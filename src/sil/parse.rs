@@ -458,9 +458,9 @@ mod tests {
     #[test]
     fn can_parse_block() {
         let tokens = [
-            Token::OpenBracket("["),
+            Token::open_bracket(),
             Token::Text("title"),
-            Token::CloseBracket("]"),
+            Token::close_bracket(),
         ];
 
         let mut expected_ast = AST::new();
@@ -478,12 +478,12 @@ mod tests {
     #[test]
     fn can_parse_block_with_single_attribute() {
         let tokens = [
-            Token::OpenBracket("["),
+            Token::open_bracket(),
             Token::Text("title"),
-            Token::CloseBracket("]"),
+            Token::close_bracket(),
             //
             Token::Text("foo"),
-            Token::EqualSign("="),
+            Token::equal_sign(),
             Token::Quoted("123"),
         ];
 
@@ -505,16 +505,16 @@ mod tests {
     #[test]
     fn can_parse_block_with_two_attributes() {
         let tokens = [
-            Token::OpenBracket("["),
+            Token::open_bracket(),
             Token::Text("title"),
-            Token::CloseBracket("]"),
+            Token::close_bracket(),
             //
             Token::Text("foo"),
-            Token::EqualSign("="),
+            Token::equal_sign(),
             Token::Quoted("123"),
             //
             Token::Text("bar"),
-            Token::EqualSign("="),
+            Token::equal_sign(),
             Token::Quoted("42"),
         ];
 
@@ -542,16 +542,16 @@ mod tests {
     #[test]
     fn can_parse_block_with_body() {
         let tokens = [
-            Token::OpenBracket("["),
+            Token::open_bracket(),
             Token::Text("title"),
-            Token::CloseBracket("]"),
+            Token::close_bracket(),
             //
             Token::Text("foo"),
-            Token::EqualSign("="),
+            Token::equal_sign(),
             Token::Quoted("123"),
             //
             Token::Text("bar"),
-            Token::EqualSign("="),
+            Token::equal_sign(),
             Token::Quoted("42"),
             //
             Token::Text("some text body"),
@@ -581,9 +581,9 @@ mod tests {
     #[test]
     fn can_parse_block_with_attributes_and_body() {
         let tokens = [
-            Token::OpenBracket("["),
+            Token::open_bracket(),
             Token::Text("title"),
-            Token::CloseBracket("]"),
+            Token::close_bracket(),
             //
             Token::Text("foo"),
         ];
@@ -603,13 +603,13 @@ mod tests {
     #[test]
     fn can_parse_multiple_simple_blocks() {
         let tokens = [
-            Token::OpenBracket("["),
+            Token::open_bracket(),
             Token::Text("title"),
-            Token::CloseBracket("]"),
+            Token::close_bracket(),
             //
-            Token::OpenBracket("["),
+            Token::open_bracket(),
             Token::Text("color"),
-            Token::CloseBracket("]"),
+            Token::close_bracket(),
         ];
 
         let mut expected_ast = AST::new();
@@ -636,27 +636,27 @@ mod tests {
     #[test]
     fn can_parse_multiple_blocks_with_bodies_and_attributes() {
         let tokens = [
-            Token::OpenBracket("["),
+            Token::open_bracket(),
             Token::Text("title"),
-            Token::CloseBracket("]"),
+            Token::close_bracket(),
             //
             Token::Text("weight"),
-            Token::EqualSign("="),
+            Token::equal_sign(),
             Token::Quoted("bold"),
             //
             Token::Text("Foobar"),
             //
-            Token::OpenBracket("["),
+            Token::open_bracket(),
             Token::Text("color"),
-            Token::CloseBracket("]"),
+            Token::close_bracket(),
             //
             Token::Text("name"),
-            Token::EqualSign("="),
+            Token::equal_sign(),
             Token::Quoted("black"),
             //
-            Token::OpenBracket("["),
+            Token::open_bracket(),
             Token::Text("lines"),
-            Token::CloseBracket("]"),
+            Token::close_bracket(),
             //
             Token::Text("some text content"),
             //
