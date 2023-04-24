@@ -54,10 +54,10 @@ impl Widget for &mut Display {
                         ui.heading(RichText::new(layer.text).size(layer.font_size as f32));
                     }
                     Layer::Garbage(garbage) => {
-                        ui.label(RichText::new(garbage.text()).color(Color32::RED));
+                        ui.label(RichText::new(garbage.text()).strong().color(Color32::RED));
                     }
                     Layer::GarbageNode(node) => {
-                        ui.label(RichText::new(node.text()).color(Color32::RED));
+                        ui.label(RichText::new(node.text()).strong().color(Color32::RED));
                     }
                     Layer::Text(layer) => {
                         ui.label(RichText::new(layer.text).size(layer.font_size as f32));
