@@ -1,6 +1,6 @@
 use egui::RichText;
 use egui::{Response, Ui, Widget };
-use egui::{Align, Layout };
+use egui::{Align, Layout, Color32};
 use sil::{AST, Token};
 use slide::{Layer, Layers};
 
@@ -54,10 +54,10 @@ impl Widget for &mut Display {
                         ui.heading(RichText::new(layer.text).size(layer.font_size as f32));
                     }
                     Layer::Garbage(garbage) => {
-                        ui.label(garbage.text());
+                        ui.label(RichText::new(garbage.text()).color(Color32::RED));
                     }
                     Layer::GarbageNode(node) => {
-                        ui.label(node.text());
+                        ui.label(RichText::new(node.text()).color(Color32::RED));
                     }
                     Layer::Text(layer) => {
                         ui.label(RichText::new(layer.text).size(layer.font_size as f32));
