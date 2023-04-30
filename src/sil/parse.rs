@@ -120,12 +120,14 @@ fn consolidate_tokens_into_string(tokens: &[Token]) -> &'static str {
         return "";
     }
     if tokens.len() == 1 {
-        return tokens[0].text();
+        return tokens[0].raw_text();
     }
 
-    let mut res = tokens[0].text();
+    let mut res = tokens[0].raw_text();
     for token in &tokens[1..] {
-        res = unsafe { res.get_unchecked(0..res.len() + token.text().len()) };
+        let raw_text = token.raw_text();
+        let diff = raw_text.as_ptr() as usize - (res.as_ptr() as usize + res.len());
+        res = unsafe { res.get_unchecked(0..res.len() + diff + raw_text.len()) };
     }
     return res;
 }
@@ -200,7 +202,7 @@ pub struct Attribute {
     pub value: *const [Token],
 }
 impl Attribute {
-    fn value(&self) -> &[Token] {
+    pub fn value(&self) -> &[Token] {
         unsafe { &*self.value } // Tokens are expected to outlive Attribute.
     }
 
@@ -489,7 +491,7 @@ mod tests {
             //
             Token::Text("foo"),
             Token::equal_sign(),
-            Token::Quoted("123"),
+            Token::Quoted("\"123\""),
         ];
 
         let mut expected_ast = AST::new();
@@ -498,7 +500,7 @@ mod tests {
             kind: "title",
             attributes: &[Attribute {
                 name: "foo",
-                value: &[Token::Quoted("123")],
+                value: &[Token::Quoted("\"123\"")],
             }],
             body: &[],
         });
@@ -516,11 +518,11 @@ mod tests {
             //
             Token::Text("foo"),
             Token::equal_sign(),
-            Token::Quoted("123"),
+            Token::Quoted("\"123\""),
             //
             Token::Text("bar"),
             Token::equal_sign(),
-            Token::Quoted("42"),
+            Token::Quoted("\"42\""),
         ];
 
         let mut expected_ast = AST::new();
@@ -530,11 +532,11 @@ mod tests {
             attributes: &[
                 Attribute {
                     name: "foo",
-                    value: &[Token::Quoted("123")],
+                    value: &[Token::Quoted("\"123\"")],
                 },
                 Attribute {
                     name: "bar",
-                    value: &[Token::Quoted("42")],
+                    value: &[Token::Quoted("\"42\"")],
                 },
             ],
             body: &[],
@@ -553,11 +555,11 @@ mod tests {
             //
             Token::Text("foo"),
             Token::equal_sign(),
-            Token::Quoted("123"),
+            Token::Quoted("\"123\""),
             //
             Token::Text("bar"),
             Token::equal_sign(),
-            Token::Quoted("42"),
+            Token::Quoted("\"42\""),
             //
             Token::Text("some text body"),
         ];
@@ -569,11 +571,11 @@ mod tests {
             attributes: &[
                 Attribute {
                     name: "foo",
-                    value: &[Token::Quoted("123")],
+                    value: &[Token::Quoted("\"123\"")],
                 },
                 Attribute {
                     name: "bar",
-                    value: &[Token::Quoted("42")],
+                    value: &[Token::Quoted("\"42\"")],
                 },
             ],
             body: &[Token::Text("some text body")],
@@ -647,7 +649,7 @@ mod tests {
             //
             Token::Text("weight"),
             Token::equal_sign(),
-            Token::Quoted("bold"),
+            Token::Quoted("\"bold\""),
             //
             Token::Text("Foobar"),
             //
@@ -657,7 +659,7 @@ mod tests {
             //
             Token::Text("name"),
             Token::equal_sign(),
-            Token::Quoted("black"),
+            Token::Quoted("\"black\""),
             //
             Token::open_bracket(),
             Token::Text("lines"),
@@ -674,7 +676,7 @@ mod tests {
             kind: "title",
             attributes: &[Attribute {
                 name: "weight",
-                value: &[Token::Quoted("bold")],
+                value: &[Token::Quoted("\"bold\"")],
             }],
             body: &[Token::Text("Foobar")],
         });
@@ -684,7 +686,7 @@ mod tests {
             kind: "color",
             attributes: &[Attribute {
                 name: "name",
-                value: &[Token::Quoted("black")],
+                value: &[Token::Quoted("\"black\"")],
             }],
             body: &[],
         });

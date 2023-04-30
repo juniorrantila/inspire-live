@@ -29,7 +29,7 @@ impl Token {
 }
 
 impl Token {
-    pub fn text(&self) -> &'static str {
+    pub fn raw_text(&self) -> &'static str {
         match self {
             Token::Number(text) => text,
             Token::Text(text) => text,
@@ -38,6 +38,13 @@ impl Token {
             Token::CloseBracket(text) => text,
             Token::Colon(text) => text,
             Token::EqualSign(text) => text,
+        }
+    }
+
+    pub fn text(&self) -> &'static str {
+        match self {
+            Token::Quoted(text) => remove_quotes(text),
+            _ => self.text(),
         }
     }
 }
@@ -69,7 +76,7 @@ pub fn lex(mut content: &'static str) -> Vec<Token> {
 
             [b'"', ..] => {
                 let res = lex_quoted(content);
-                tokens.push(Token::Quoted(remove_quotes(res)));
+                tokens.push(Token::Quoted(res));
                 content = &content[res.len()..];
             }
 
@@ -223,12 +230,12 @@ mod tests {
 
     #[test]
     fn can_lex_quoted() {
-        assert_eq!(lex("\"black\""), [Token::Quoted("black")]);
+        assert_eq!(lex("\"black\""), [Token::Quoted("\"black\"")]);
     }
 
     #[test]
     fn can_lex_incomplete_quoted() {
-        assert_eq!(lex("\"black"), [Token::Quoted("black")]);
+        assert_eq!(lex("\"black"), [Token::Quoted("\"black")]);
     }
 
     #[test]
